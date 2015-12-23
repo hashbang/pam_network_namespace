@@ -14,6 +14,7 @@ PAM_EXTERN int pam_sm_open_session(pam_handle_t *pamh, int flags,
 	(void)argc;
 	(void)argv;
 	const char *user = NULL;
+	int err;
 	struct nl_sock *sock = NULL;
 
 	if (PAM_SUCCESS != pam_get_item(pamh, PAM_USER, &user) || user == NULL) {
@@ -31,13 +32,14 @@ PAM_EXTERN int pam_sm_open_session(pam_handle_t *pamh, int flags,
 		goto err;
 	}
 
-	if (0 != nl_connect(sock, NETLINK_ROUTE)) {
-		pam_syslog(pamh, LOG_ERR, "Unable to connect to netlink socket: %m");
+	if (0 != (err = nl_connect(sock, NETLINK_ROUTE))) {
+		pam_syslog(pamh, LOG_ERR, "Unable to connect to netlink socket: %s", nl_geterror(err));
 		goto err;
 	}
 
-	if (0 != rtnl_link_veth_add(sock, DEFAULT_DEVICE_NAME, user, getppid())) {
-		pam_syslog(pamh, LOG_ERR, "Unable to create veth pair: %m");
+	/* Create veth device shared with parent */
+	if (0 != (err = rtnl_link_veth_add(sock, DEFAULT_DEVICE_NAME, user, getppid()))) {
+		pam_syslog(pamh, LOG_ERR, "Unable to create veth pair: %s", nl_geterror(err));
 		goto err;
 	}
 
