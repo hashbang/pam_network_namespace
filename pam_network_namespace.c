@@ -19,12 +19,12 @@ PAM_EXTERN int pam_sm_open_session(pam_handle_t *pamh, int flags,
 	}
 
 	if (NULL == (sock = nl_socket_alloc())) {
-		pam_syslog(pamh, LOG_ERR, "Unable to alloc netlink socket: %m");
+		pam_syslog(pamh, LOG_ERR, "Unable to allocate netlink socket: %m");
 		goto err;
 	}
 
 	if (0 != nl_connect(sock, NETLINK_ROUTE)) {
-		pam_syslog(pamh, LOG_ERR, "Unable to connec to netlink socket: %m");
+		pam_syslog(pamh, LOG_ERR, "Unable to connect to netlink socket: %m");
 		goto err;
 	}
 
