@@ -1,3 +1,4 @@
+#include <netlink/route/link/veth.h>
 #include <sched.h>
 #include <security/pam_modules.h>
 #include <security/pam_modutil.h>
@@ -9,11 +10,34 @@ PAM_EXTERN int pam_sm_open_session(pam_handle_t *pamh, int flags,
 	(void)flags;
 	(void)argc;
 	(void)argv;
+	struct nl_sock *sock = NULL;
+
 	if (0 != unshare(CLONE_NEWNET)) {
-		pam_syslog(pamh, LOG_ERR, "Unable to unshare from parent namespace, %m");
-		return PAM_SESSION_ERR;
+		pam_syslog(pamh, LOG_ERR, "Unable to unshare from parent namespace: %m");
+		goto err;
 	}
+
+	if (NULL == (sock = nl_socket_alloc())) {
+		pam_syslog(pamh, LOG_ERR, "Unable to alloc netlink socket: %m");
+		goto err;
+	}
+
+	if (0 != nl_connect(sock, NETLINK_ROUTE)) {
+		pam_syslog(pamh, LOG_ERR, "Unable to connec to netlink socket: %m");
+		goto err;
+	}
+
+	if (0 != rtnl_link_veth_add(sock, NULL, NULL, 1)) {
+		pam_syslog(pamh, LOG_ERR, "Unable to create veth pair: %m");
+		goto err;
+	}
+
 	return PAM_SUCCESS;
+
+err:
+	if (sock) nl_socket_free(sock);
+
+	return PAM_SESSION_ERR;
 }
 
 PAM_EXTERN int pam_sm_close_session(pam_handle_t *pamh, int flags,
