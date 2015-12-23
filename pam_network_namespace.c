@@ -6,12 +6,20 @@
 #include <syslog.h>
 #include <unistd.h>
 
+#define DEFAULT_DEVICE_NAME "veth0"
+
 PAM_EXTERN int pam_sm_open_session(pam_handle_t *pamh, int flags,
                                    int argc, const char **argv) {
 	(void)flags;
 	(void)argc;
 	(void)argv;
+	const char *user = NULL;
 	struct nl_sock *sock = NULL;
+
+	if (PAM_SUCCESS != pam_get_item(pamh, PAM_USER, &user) || user == NULL) {
+		pam_syslog(pamh, LOG_ERR, "Unable to get username; using auto-generated interface name.");
+		user = NULL;
+	}
 
 	if (0 != unshare(CLONE_NEWNET)) {
 		pam_syslog(pamh, LOG_ERR, "Unable to unshare from parent namespace: %m");
@@ -28,7 +36,7 @@ PAM_EXTERN int pam_sm_open_session(pam_handle_t *pamh, int flags,
 		goto err;
 	}
 
-	if (0 != rtnl_link_veth_add(sock, NULL, NULL, getppid())) {
+	if (0 != rtnl_link_veth_add(sock, DEFAULT_DEVICE_NAME, user, getppid())) {
 		pam_syslog(pamh, LOG_ERR, "Unable to create veth pair: %m");
 		goto err;
 	}
