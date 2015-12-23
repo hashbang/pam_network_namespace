@@ -59,7 +59,7 @@ PAM_EXTERN int pam_sm_close_session(pam_handle_t *pamh, int flags,
 }
 
 #ifdef PAM_STATIC
-struct pam_module _pam_namespace_modstruct = {
+struct pam_module _pam_network_namespace_modstruct = {
      "pam_network_namespace",
      NULL,
      NULL,
