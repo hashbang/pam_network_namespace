@@ -1,5 +1,5 @@
 pam_network_namespace
----------------------
+=====================
 
 A Linux PAM (Pluggable Authentication Module) that makes sessions run in their own network namespace.
 
