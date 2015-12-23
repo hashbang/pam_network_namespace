@@ -4,6 +4,7 @@
 #include <security/pam_modutil.h>
 #include <security/pam_ext.h>
 #include <syslog.h>
+#include <unistd.h>
 
 PAM_EXTERN int pam_sm_open_session(pam_handle_t *pamh, int flags,
                                    int argc, const char **argv) {
@@ -27,7 +28,7 @@ PAM_EXTERN int pam_sm_open_session(pam_handle_t *pamh, int flags,
 		goto err;
 	}
 
-	if (0 != rtnl_link_veth_add(sock, NULL, NULL, 1)) {
+	if (0 != rtnl_link_veth_add(sock, NULL, NULL, getppid())) {
 		pam_syslog(pamh, LOG_ERR, "Unable to create veth pair: %m");
 		goto err;
 	}
