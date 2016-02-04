@@ -1,0 +1,13 @@
+sudo: false
+
+addons:
+  apt:
+    packages:
+    - build-essential
+    - libnl-route-3-dev
+    - libpam0g-dev
+
+git:
+  depth: 3
+
+script: make
