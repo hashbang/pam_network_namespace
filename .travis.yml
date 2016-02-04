@@ -4,6 +4,7 @@ addons:
   apt:
     packages:
     - build-essential
+    - libnl-3-dev
     - libnl-route-3-dev
     - libpam0g-dev
 
