@@ -17,7 +17,7 @@ PAM_EXTERN int pam_sm_open_session(pam_handle_t *pamh, int flags,
 	int err;
 	struct nl_sock *sock = NULL;
 
-	if (PAM_SUCCESS != pam_get_item(pamh, PAM_USER, &user) || user == NULL) {
+	if (PAM_SUCCESS != pam_get_item(pamh, PAM_USER, (const void**) &user) || user == NULL) {
 		pam_syslog(pamh, LOG_ERR, "Unable to get username; using auto-generated interface name.");
 		user = NULL;
 	}
