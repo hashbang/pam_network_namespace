@@ -6,6 +6,12 @@
 #include <syslog.h>
 #include <unistd.h>
 
+#if TEST
+#include <stdio.h>
+#define pam_syslog(pamh, i, ...) ((void)pamh, (void)i, printf(__VA_ARGS__), puts(""))
+#define pam_get_item(pamh, i, user) ((void)pamh, (void)i, *user = getpwuid(geteuid())->pw_name, PAM_SUCCESS)
+#endif
+
 #define DEFAULT_DEVICE_NAME "veth0"
 
 PAM_EXTERN int pam_sm_open_session(pam_handle_t *pamh, int flags,
@@ -70,4 +76,13 @@ struct pam_module _pam_network_namespace_modstruct = {
      pam_sm_close_session,
      NULL
 };
+#endif
+
+
+#if TEST
+int main(int argc, char *argv[]) {
+	if (pam_sm_open_session(NULL, 0, 0, NULL) != PAM_SUCCESS) return 1;
+	if (argc <= 1) return 0;
+	return execvp(argv[1], argv+1);
+}
 #endif
