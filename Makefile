@@ -15,4 +15,4 @@ test: test.bin
 clean:
 	rm -f pam_network_namespace.so pam_network_namespace.o test.bin
 
-.PHONY: all clean
+.PHONY: all test clean
