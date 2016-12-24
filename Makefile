@@ -1,5 +1,7 @@
 CFLAGS=-Wall -Wextra -D_GNU_SOURCE -O2 -fPIC `pkg-config --cflags libnl-route-3.0`
 LDFLAGS=-rdynamic `pkg-config --libs libnl-route-3.0`
+PREFIX=/usr/local
+DESTDIR=
 
 all: pam_network_namespace.so
 
@@ -15,4 +17,11 @@ test: test.bin
 clean:
 	rm -f pam_network_namespace.so pam_network_namespace.o test.bin
 
-.PHONY: all test clean
+install: pam_network_namespace.so
+	mkdir -p -- "$(DESTDIR)$(PREFIX)"/lib/security/
+	install -- "$<" "$(DESTDIR)$(PREFIX)"/lib/security/
+
+uninstall:
+	rm -f -- "$(DESTDIR)$(PREFIX)"/lib/security/pam_network_namespace.so
+
+.PHONY: all test clean install uninstall
