@@ -1,3 +1,6 @@
+#include <sys/socket.h> /* needed for linux/if.h */
+#include <linux/if.h> /* IFF_UP */
+#include <netlink/route/link.h>
 #include <netlink/route/link/veth.h>
 #include <sched.h>
 #include <security/pam_modules.h>
@@ -22,6 +25,7 @@ PAM_EXTERN int pam_sm_open_session(pam_handle_t *pamh, int flags,
 	const char *user = NULL;
 	int err;
 	struct nl_sock *sock = NULL;
+	struct rtnl_link *lo = NULL, *lo_changes = NULL;
 
 	if (PAM_SUCCESS != pam_get_item(pamh, PAM_USER, (const void**) &user) || user == NULL) {
 		pam_syslog(pamh, LOG_ERR, "Unable to get username; using auto-generated interface name.");
@@ -43,6 +47,24 @@ PAM_EXTERN int pam_sm_open_session(pam_handle_t *pamh, int flags,
 		goto err;
 	}
 
+	/* Bring up loopback device inside namespace equivalent to: ip link set lo up */
+	if (0 != (err = rtnl_link_get_kernel(sock, 1, "lo", &lo))) {
+		pam_syslog(pamh, LOG_ERR, "Unable to get looopback link: %s", nl_geterror(err));
+		goto err;
+	}
+	if (NULL == (lo_changes = rtnl_link_alloc())) {
+		pam_syslog(pamh, LOG_ERR, "Unable to allocate link");
+		goto err;
+	}
+	rtnl_link_set_flags(lo_changes, IFF_UP);
+	if (0 != (err = rtnl_link_change(sock, lo, lo_changes, 0))) {
+		pam_syslog(pamh, LOG_ERR, "Unable to bring up loopback interface: %s", nl_geterror(err));
+		goto err;
+	}
+	rtnl_link_put(lo_changes);
+	rtnl_link_put(lo);
+	lo_changes = NULL, lo = NULL;
+
 	/* Create veth device shared with parent */
 	if (0 != (err = rtnl_link_veth_add(sock, DEFAULT_DEVICE_NAME, user, getppid()))) {
 		pam_syslog(pamh, LOG_ERR, "Unable to create veth pair: %s", nl_geterror(err));
@@ -52,6 +74,8 @@ PAM_EXTERN int pam_sm_open_session(pam_handle_t *pamh, int flags,
 	return PAM_SUCCESS;
 
 err:
+	if (lo_changes) rtnl_link_put(lo_changes);
+	if (lo) rtnl_link_put(lo);
 	if (sock) nl_socket_free(sock);
 
 	return PAM_SESSION_ERR;
