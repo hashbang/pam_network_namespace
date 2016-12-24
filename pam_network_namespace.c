@@ -25,7 +25,7 @@ PAM_EXTERN int pam_sm_open_session(pam_handle_t *pamh, int flags,
 	const char *user = NULL;
 	int err;
 	struct nl_sock *sock = NULL;
-	struct rtnl_link *lo = NULL, *lo_changes = NULL;
+	struct rtnl_link *lo = NULL, *lo_changes = NULL, *link = NULL, *peer = NULL;
 
 	if (PAM_SUCCESS != pam_get_item(pamh, PAM_USER, (const void**) &user) || user == NULL) {
 		pam_syslog(pamh, LOG_ERR, "Unable to get username; using auto-generated interface name.");
@@ -66,16 +66,30 @@ PAM_EXTERN int pam_sm_open_session(pam_handle_t *pamh, int flags,
 	lo_changes = NULL, lo = NULL;
 
 	/* Create veth device shared with parent */
-	if (0 != (err = rtnl_link_veth_add(sock, DEFAULT_DEVICE_NAME, user, getppid()))) {
+	if (NULL == (link = rtnl_link_veth_alloc())) {
+		pam_syslog(pamh, LOG_ERR, "Unable to allocate veth");
+		goto err;
+	}
+	peer = rtnl_link_veth_get_peer(link);
+	rtnl_link_set_name(link, DEFAULT_DEVICE_NAME);
+	if (user) rtnl_link_set_name(peer, user);
+	rtnl_link_set_ns_pid(peer, getppid());
+	if (0 != (err = rtnl_link_add(sock, link, NLM_F_CREATE))) {
 		pam_syslog(pamh, LOG_ERR, "Unable to create veth pair: %s", nl_geterror(err));
 		goto err;
 	}
+	rtnl_link_put(peer);
+	rtnl_link_put(link);
+	peer = NULL, link = NULL;
 
+	/* all done */
 	return PAM_SUCCESS;
 
 err:
 	if (lo_changes) rtnl_link_put(lo_changes);
 	if (lo) rtnl_link_put(lo);
+	if (peer) rtnl_link_put(peer);
+	if (link) rtnl_link_put(link);
 	if (sock) nl_socket_free(sock);
 
 	return PAM_SESSION_ERR;
