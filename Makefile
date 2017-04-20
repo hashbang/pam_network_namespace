@@ -6,10 +6,10 @@ DESTDIR=
 all: pam_network_namespace.so
 
 pam_network_namespace.so: pam_network_namespace.o
-	$(CC) -shared $(LDFLAGS) -o $@ $^
+	$(CC) -shared -o $@ $^ $(LDFLAGS)
 
 test.bin: pam_network_namespace.c
-	$(CC) $(CFLAGS) $(LDFLAGS) -DTEST -o $@ $^
+	$(CC) $(CFLAGS) -DTEST -o $@ $^ $(LDFLAGS)
 
 test: test.bin
 	./test.bin echo "Test success!"
