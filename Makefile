@@ -1,5 +1,5 @@
-CFLAGS=-Wall -Wextra -D_GNU_SOURCE -O2 -fPIC `pkg-config --cflags libnl-route-3.0`
-LDFLAGS=-rdynamic `pkg-config --libs libnl-route-3.0`
+CFLAGS=-Wall -Wextra -D_GNU_SOURCE -O2 -fPIC $(shell pkg-config --cflags libnl-route-3.0)
+LDFLAGS=-rdynamic $(shell pkg-config --libs libnl-route-3.0)
 PREFIX=/usr/local
 DESTDIR=
 
